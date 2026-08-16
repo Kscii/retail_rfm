@@ -6,6 +6,7 @@ const outputDir = path.resolve('dist/browser-smoke')
 fs.mkdirSync(outputDir, { recursive: true })
 const baseUrl = new URL(process.env.SLIDEV_URL || 'http://localhost:3030/')
 const slideUrl = number => new URL(String(number), baseUrl).href
+const allowedOrigin = baseUrl.origin
 
 const browser = await chromium.launch({
   executablePath: '/usr/bin/chromium',
@@ -30,8 +31,8 @@ page.on('requestfailed', request => {
     report.failedRequests.push(`${request.method()} ${request.url()} · ${request.failure()?.errorText}`)
 })
 page.on('request', request => {
-  const host = new URL(request.url()).hostname
-  if (!['localhost', '127.0.0.1', '::1'].includes(host)) report.remoteRequests.push(request.url())
+  const origin = new URL(request.url()).origin
+  if (origin !== allowedOrigin) report.remoteRequests.push(request.url())
 })
 
 await page.goto(slideUrl(8), { waitUntil: 'networkidle' })
