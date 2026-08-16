@@ -21,6 +21,23 @@
   const status = $("#status");
   const note = $("#view-note");
   let data;
+  let resizeFrame;
+
+  function resizeVisiblePlots() {
+    for (const element of [plot, $("#timeline")]) {
+      if (!element || element.hidden || !element._fullLayout) continue;
+      element.style.width = element === plot ? `${document.documentElement.clientWidth}px` : "100%";
+      const bounds = element.getBoundingClientRect();
+      if (bounds.width > 0 && bounds.height > 0) Plotly.Plots.resize(element);
+    }
+  }
+
+  function schedulePlotResize() {
+    if (resizeFrame) cancelAnimationFrame(resizeFrame);
+    resizeFrame = requestAnimationFrame(() => {
+      resizeFrame = requestAnimationFrame(resizeVisiblePlots);
+    });
+  }
 
   function activeView() {
     const query = new URLSearchParams(window.location.search);
@@ -108,7 +125,8 @@
       camera: { eye: { x: 1.9, y: 1.9, z: 1.35 } },
     };
     layout.uirevision = "presentation-camera-v1";
-    Plotly.react(plot, traces3d(), layout, { responsive: true, displaylogo: false, displayModeBar: false });
+    Plotly.react(plot, traces3d(), layout, { responsive: true, displaylogo: false, displayModeBar: false })
+      .then(schedulePlotResize);
     note.textContent = "4,338 customers · 4 centroids · rotate once";
   }
 
@@ -147,7 +165,8 @@
     const layout = baseLayout();
     layout.xaxis = { title: xTitle, gridcolor: COLORS.grid, zeroline: false };
     layout.yaxis = { title: yTitle, gridcolor: COLORS.grid, zeroline: false };
-    Plotly.react(plot, traces, layout, { responsive: true, displaylogo: false, displayModeBar: false });
+    Plotly.react(plot, traces, layout, { responsive: true, displaylogo: false, displayModeBar: false })
+      .then(schedulePlotResize);
     note.textContent = "same model coordinates, not PCA";
   }
 
@@ -190,7 +209,8 @@
       xaxis: { gridcolor: COLORS.grid },
       yaxis: { title: "Invoice amount (£)", gridcolor: COLORS.grid, zerolinecolor: COLORS.ink },
       showlegend: false,
-    }, { responsive: true, displaylogo: false, displayModeBar: false });
+    }, { responsive: true, displaylogo: false, displayModeBar: false })
+      .then(schedulePlotResize);
     note.textContent = "Customer 13777 · purchases and cancellations";
   }
 
@@ -211,6 +231,11 @@
     button.addEventListener("click", () => setView(button.dataset.view));
   }
   window.addEventListener("popstate", () => render(activeView()));
+  window.addEventListener("resize", schedulePlotResize);
+  window.addEventListener("message", (event) => {
+    if (event.source === window.parent && event.data?.type === "retail-rfm:resize") schedulePlotResize();
+  });
+  new ResizeObserver(schedulePlotResize).observe(document.documentElement);
 
   fetch("data.json", { cache: "no-store" })
     .then((response) => {

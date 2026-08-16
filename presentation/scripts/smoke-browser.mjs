@@ -35,13 +35,29 @@ page.on('request', request => {
   if (origin !== allowedOrigin) report.remoteRequests.push(request.url())
 })
 
-await page.goto(slideUrl(8), { waitUntil: 'networkidle' })
+await page.goto(slideUrl(7), { waitUntil: 'networkidle' })
+await page.keyboard.press('ArrowRight')
+await page.waitForURL(url => url.pathname.endsWith('/8'))
 report.checks.noSourceSwitch = await page.getByText(/Live Dash|Static fallback/).count() === 0
 report.checks.noOuterDemoBar = await page.getByText('Interactive RFM explorer', { exact: true }).count() === 0
-const staticFrame = page.frames().find(frame => frame.url().includes('/static-demo/index.html'))
+const visibleDemoFrame = page.locator('iframe.live-demo-frame:visible')
+await visibleDemoFrame.waitFor({ state: 'visible' })
+const staticFrame = await (await visibleDemoFrame.elementHandle()).contentFrame()
 if (!staticFrame) throw new Error('Static presentation iframe was not found')
 await staticFrame.locator('#plot').waitFor({ state: 'visible' })
 await staticFrame.locator('canvas').first().waitFor({ state: 'visible' })
+await staticFrame.waitForFunction(() => {
+  const element = document.querySelector('#plot')
+  const viewportWidth = document.documentElement.clientWidth
+  return element?._fullLayout && document.documentElement.scrollWidth <= viewportWidth + 1
+    && Math.abs(element._fullLayout.width - viewportWidth) <= 1
+})
+report.checks.firstNavigationSizing = await staticFrame.locator('#plot').evaluate(element => ({
+  viewportWidth: document.documentElement.clientWidth,
+  documentScrollWidth: document.documentElement.scrollWidth,
+  plotClientWidth: element.clientWidth,
+  plotLayoutWidth: element._fullLayout?.width,
+}))
 report.checks.static3dCanvas = await staticFrame.locator('canvas').count()
 report.checks.staticCustomerCountCopy = await staticFrame.getByText(/4,338 customers/).count()
 report.checks.noProfilesButton = await staticFrame.getByRole('button', { name: 'Profiles', exact: true }).count() === 0
@@ -174,6 +190,9 @@ await browser.close()
 const markers = report.checks.markerContract
 const customer = report.checks.staticCustomer13777
 if (report.checks.static3dCanvas < 1) throw new Error('Static WebGL canvas is missing')
+const firstSizing = report.checks.firstNavigationSizing
+if (firstSizing.documentScrollWidth > firstSizing.viewportWidth + 1 || firstSizing.plotClientWidth !== firstSizing.viewportWidth || Math.abs(firstSizing.plotLayoutWidth - firstSizing.viewportWidth) > 1)
+  throw new Error(`First-navigation plot sizing failed: ${JSON.stringify(firstSizing)}`)
 if (!report.checks.noSourceSwitch || !report.checks.noProfilesButton || !report.checks.noOuterDemoBar || !report.checks.noStaticFooter) throw new Error('Obsolete demo chrome remains')
 if (markers.customerTraceCount !== 8 || markers.normal !== 4 || markers.capped !== 4 || markers.centroidSize !== 4 || markers.centroidSymbol !== 'diamond' || markers.hoverFontSize !== 8)
   throw new Error(`3D marker contract failed: ${JSON.stringify(markers)}`)

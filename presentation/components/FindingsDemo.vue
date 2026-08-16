@@ -1,9 +1,43 @@
 <script setup>
 import { useNav } from '@slidev/client'
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
 const { isPrintMode } = useNav()
 const staticSrc = new URL('static-demo/index.html?view=3d', document.baseURI).href
 const printImage = new URL('images/slide8-demo.png', document.baseURI).href
+const findingsRoot = ref(null)
+const demoFrame = ref(null)
+const resizeTimers = new Set()
+let visibilityObserver
+
+function requestDemoResize() {
+  demoFrame.value?.contentWindow?.postMessage({ type: 'retail-rfm:resize' }, window.location.origin)
+}
+
+function scheduleDemoResize() {
+  nextTick(() => {
+    for (const delay of [0, 80, 220, 500]) {
+      const timer = window.setTimeout(() => {
+        resizeTimers.delete(timer)
+        requestDemoResize()
+      }, delay)
+      resizeTimers.add(timer)
+    }
+  })
+}
+
+onMounted(() => {
+  visibilityObserver = new IntersectionObserver((entries) => {
+    if (entries.some(entry => entry.isIntersecting && entry.intersectionRatio >= 0.5)) scheduleDemoResize()
+  }, { threshold: [0.5] })
+  if (findingsRoot.value) visibilityObserver.observe(findingsRoot.value)
+})
+
+onBeforeUnmount(() => {
+  visibilityObserver?.disconnect()
+  for (const timer of resizeTimers) window.clearTimeout(timer)
+  resizeTimers.clear()
+})
 
 const profiles = [
   { code:'S1', name:'Long-inactive', customers:'1,054 · 24.30%', net:'5.71%', r:'246d', f:'1', m:'£300', color:'var(--s1)' },
@@ -14,7 +48,7 @@ const profiles = [
 </script>
 
 <template>
-  <div class="findings">
+  <div ref="findingsRoot" class="findings">
     <div class="hook"><strong>457 customers</strong><span>about 10.5%</span><i>→</i><strong>58.71%</strong><span>of observed Net value</span></div>
     <div class="findings-body">
       <section class="profiles">
@@ -29,7 +63,7 @@ const profiles = [
         </article>
       </section>
       <section class="demo-window">
-        <iframe v-if="!isPrintMode" class="live-demo-frame" :src="staticSrc" title="RFM compact interactive demo" />
+        <iframe v-if="!isPrintMode" ref="demoFrame" class="live-demo-frame" :src="staticSrc" title="RFM compact interactive demo" @load="scheduleDemoResize" />
         <img v-else class="demo-print-fallback" :src="printImage" alt="Static RFM 3D plot with four segments and centroids" />
       </section>
     </div>
