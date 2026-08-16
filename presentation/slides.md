@@ -35,10 +35,10 @@ fonts:
 【主讲】
 
 Good morning. I am Xuejian Fang.
-Can purchasing behavior reveal meaningful customer groups?
-I represent behavior with Recency, Frequency, and Net Monetary.
-I use RFM and K-means++ to find four exploratory patterns.
-I will explain how I reached and evaluated these patterns.
+This presentation examines whether purchasing behavior can reveal meaningful customer groups.
+I represent customer behavior with Recency, Frequency, and Net Monetary.
+Next, I use RFM and K-means++ to identify four exploratory patterns.
+Finally, I evaluate their stability and interpretation.
 
 【本页Q&A，不读】
 
@@ -64,17 +64,15 @@ meaningful表示这些客群在RFM行为上有清楚、稳定且可以解释的�
 <!--
 【主讲】
 
-The dataset has about five hundred and forty-two thousand invoice lines, eight fields, and about twenty-six thousand invoices.
-It covers December twenty ten to December twenty eleven.
+First, I describe the dataset.
+It contains about half a million invoice lines and about twenty-six thousand invoices across eight fields.
+It covers about one year, from late twenty ten to late twenty eleven.
 
-This sample shows one customer with two invoices.
-The first has seven product lines, and the second has two.
+This example shows one customer with two invoices.
+A customer may have many invoices, and each invoice may have many lines.
 
-One customer can have many invoices, and each invoice can contain many invoice lines.
-
-Invoice date, invoice number, quantity, price, and customer ID later create RFM.
-
-So each row is an invoice line, not a complete invoice or customer.
+For RFM, I use date, invoice number, quantity, price, and customer ID.
+Therefore, each row is an invoice line, not an invoice or customer.
 
 【本页Q&A，不读】
 
@@ -102,16 +100,15 @@ So each row is an invoice line, not a complete invoice or customer.
 <!--
 【主讲】
 
+Next, I define the analysis problem.
 This is an unsupervised clustering problem.
 
-I group the invoice lines by customer ID.
-Each customer gets one RFM profile.
-
+First, I group invoice lines by customer ID to create one RFM profile per customer.
 Recency means days since the last valid purchase.
 Frequency counts distinct valid purchase invoices.
-Net Monetary adds all signed transaction amounts in this data period.
+Net Monetary adds signed transaction amounts within the observed period.
 
-There are no true segment labels, so I cannot calculate classification accuracy.
+Without ground-truth segment labels, I cannot calculate classification accuracy.
 
 【本页Q&A，不读】
 
@@ -142,15 +139,15 @@ Frequency希望表示购买发生的次数（buying occasions）。同一张invo
 <!--
 【主讲】
 
-EDA shows three issues.
+Before modelling, I examine three data issues.
 
-First, twenty-four point nine three percent of invoice lines have no customer ID, so I cannot link them to customers.
+First, about one quarter of lines lack customer ID, so they cannot form customer profiles.
 
 Second, returns can change the value story.
-This customer's Gross value exceeds one hundred and sixty-eight thousand pounds, but its Net value is only two pounds and ninety pence.
-Gross would falsely describe this customer as high-value.
+This customer's Gross value is about one hundred and seventy thousand pounds, but Net value is about three pounds.
+Gross would incorrectly suggest high value.
 
-Third, Frequency and Net Monetary have long right tails, so extreme customers may dominate distances and centroids.
+Third, Frequency and Net Monetary have long tails, so extremes may dominate distances and centroids.
 
 【本页Q&A，不读】
 
@@ -174,17 +171,17 @@ Third, Frequency and Net Monetary have long right tails, so extreme customers ma
 <!--
 【主讲】
 
-I remove five thousand, two hundred and sixty-eight extra exact duplicates.
-Then I keep about four hundred thousand signed transaction lines with known customer IDs.
-Valid purchases create RFM profiles for four thousand, three hundred and thirty-eight customers.
+Based on these issues, I preprocess the data.
 
-A cancellation does not change Frequency.
-Its negative amount only adjusts Net Monetary.
-A fully cancelled one-hundred-pound purchase has Frequency one and Net Monetary zero.
+First, I remove about five thousand three hundred extra exact duplicate copies.
+Next, I retain about four hundred thousand known-customer signed lines and obtain about four thousand three hundred profiles.
 
-I cap the model copy at the ninety-nine-point-five percentile.
-This affects twenty-nine customers but removes nobody.
-StandardScaler makes the feature scales comparable.
+A cancellation does not change Frequency; its negative amount only adjusts Net Monetary.
+For example, a fully cancelled one-hundred-pound purchase has Frequency one and Net Monetary zero.
+
+Then, I apply the ninety-nine-point-five percentile cap to a model copy.
+It affects about thirty customers but removes nobody.
+Finally, StandardScaler makes the feature scales comparable.
 
 【本页Q&A，不读】
 
@@ -212,25 +209,20 @@ R和F只由有效正向购买定义，因此C开头的取消invoice不会增加�
 <!--
 【主讲】
 
-This animation uses customer profiles.
-The model uses scaled and capped RFM features; I only show R–F.
+After preprocessing, I apply K-means++ clustering.
+The model uses scaled and capped RFM in three dimensions; this page shows R–F.
 
-The first centroid is selected at random.
-
-K-means++ gives farther customers a higher probability based on squared distance.
-It does not always select the farthest customer.
+First, it selects one centroid at random.
+Next, K-means++ gives farther customers a higher probability based on squared distance.
 Orange is an initialization weight, not a cluster.
 
-Then K-means repeats assignment and update.
-Assignment selects the nearest centroid.
-Update recalculates the cluster mean.
-Hollow diamonds are old centroids, and solid diamonds are updated centroids.
+After initialization, K-means repeats assignment and update.
+It selects the nearest centroid, then recalculates each cluster mean.
+Hollow diamonds are old centroids; solid diamonds are updated centroids.
 
-Across fifteen iterations, assignment changes decrease.
-At iteration fifteen, zero changes means convergence.
-
-Convergence does not guarantee the global optimum.
-So I compare fifty seeds and twenty initializations.
+After fifteen iterations, zero changes indicate convergence.
+However, convergence does not guarantee the global optimum.
+Therefore, I compare fifty seeds and use twenty initializations in the final model.
 
 【本页Q&A，不读】
 
@@ -267,18 +259,17 @@ K-means可能停在局部最优解（local optimum），结果可能受初始cen
 <!--
 【主讲】
 
-I use four types of evidence.
+To select k, I compare four types of evidence.
 
-Inertia falls quickly before k equals four.
+First, inertia bends near k equals four.
+Second, silhouette peaks at k equals two, but this split is too broad.
+At k equals four, it remains about zero point five six.
 
-Silhouette is highest at k equals two, but that split is too broad.
-At k equals four, silhouette is still zero point five six three.
+Third, median pairwise ARI equals one across fifty seeds.
+Finally, the smallest group is just above one percent.
 
-Median pairwise ARI is one across fifty different starts.
-The smallest group is one point one eight percent.
-
-So k equals four balances separation, stability, group size, and clear profiles.
-These scores are not accuracy, and k equals four is not the only possible truth.
+Together, k equals four balances separation, stability, size, and clear profiles.
+However, these measures are not accuracy, and k equals four is not the only possible truth.
 
 【本页Q&A，不读】
 
@@ -308,19 +299,17 @@ ARI比较不同运行的客户分配是否一致，并校正随机一致。中�
 <!--
 【主讲】
 
-The profiles form a ladder from long-inactive S1 to top-frequency high-value S4.
+Based on this evidence, I obtain four customer profiles.
+They range from long-inactive S1 to top-frequency high-value S4.
 
-Together, S3 and S4 contain four hundred and fifty-seven customers.
-They are about ten point five percent, but contribute fifty-eight point seven one percent of observed Net value.
+Together, S3 and S4 contain about four hundred and sixty customers: about ten percent, contributing nearly sixty percent of observed Net value.
 
-This three-dimensional chart uses scaled and capped inputs.
-The diamonds are centroids.
-I keep the three RFM axes instead of using PCA.
+This three-dimensional chart uses scaled and capped inputs; diamonds show centroids.
+I keep one axis for each RFM feature, without PCA.
 
-This example customer is close to the S4 centroid.
-It has Recency one and Frequency thirty-three.
-Eight of its forty-one invoices are cancellations.
-This is an observation, not a response prediction.
+The example near S4 has one-day Recency and about thirty purchase invoices.
+It has about forty invoices, including eight cancellations.
+This observation is not a response prediction.
 
 【本页Q&A，不读】
 
@@ -370,17 +359,16 @@ Frequency只统计33张有效正向购买invoice。其余8张是C开头的取消
 <!--
 【主讲】
 
-The result has three boundaries.
+However, the result has three important boundaries.
 
-For data, I only analyze known customers within about one year.
-Some returns may refer to earlier purchases.
+First, the data covers known customers for about one year; some returns may refer to earlier purchases.
 
-For the model, there are no true labels.
-The result depends on k, scaling, and capping, and the cap compresses top differences.
+Second, the model has no ground-truth labels.
+Results depend on k, scaling, and capping; the cap compresses top differences.
 
-For business use, Net value is not profit or customer lifetime value.
-Clusters do not predict response or prove causality.
-They are exploratory patterns, not permanent identities.
+Third, observed Net value is not profit or customer lifetime value.
+The clusters neither predict response nor prove causality.
+Therefore, they are exploratory patterns, not permanent identities.
 
 【本页Q&A，不读】
 
@@ -413,17 +401,16 @@ cluster会随k、缩放和截尾口径变化，也没有真实标签证明其唯
 <!--
 【主讲】
 
-RFM reveals four meaningful and stable exploratory behavior patterns.
+Finally, I return to the research question.
+RFM reveals four stable, meaningful exploratory behavior patterns.
 
-About ten point five percent of customers contribute fifty-eight point seven one percent of observed Net value.
-The segments do not predict response.
+About ten percent of customers contribute nearly sixty percent of observed Net value, but the segments do not predict response.
 
-They create testable hypotheses: reactivate S1, encourage repeat buying in S2, retain S3, and protect S4.
+They support tests: reactivate S1, encourage S2, retain S3, and protect S4.
 
 Next, I would update RFM, track segment movement, run controlled A/B tests, and measure future behavior.
 
-The segments support better questions.
-Future evidence must validate the actions.
+Future evidence must validate actions.
 Thank you.
 
 【本页Q&A，不读】

@@ -2,7 +2,7 @@
 
 This file is not an extra slide. It is a rehearsal checklist for the strict 10-page final deck.
 
-The speaker notes are the single script to read. Numerals on the slides stay exact, while the spoken script writes numbers and dates in readable words. Customer IDs and invoice numbers remain visible evidence but are not read aloud. Keep `S1–S4`, `K-means++`, and `R–F` unchanged.
+The speaker notes are the single script to read. The delivery should be calm, structured, and suitable for reading aloud. Numerals on the slides stay exact, while business scale and findings use approximate spoken values. Method settings stay exact. Customer IDs and invoice numbers remain visible evidence but are not read aloud. Keep `S1–S4`, `K-means++`, and `R–F` unchanged.
 
 | Slide | Target | Total | One sentence that must be clear |
 |---:|---:|---:|---|
@@ -13,7 +13,7 @@ The speaker notes are the single script to read. Numerals on the slides stay exa
 | 5 | 1:05 | 3:50 | Cancellations adjust Net M, capping deletes nobody, and scaling makes units comparable. |
 | 6 | 1:20 | 5:10 | The real-data animation separates K-means++ initialization, assignment, recentering, and convergence. |
 | 7 | 1:10 | 6:20 | k=4 balances compactness, separation, stability, size, and meaning. |
-| 8 | 1:10 | 7:30 | About 10.5% of customers contribute 58.71% of observed Net value. |
+| 8 | 1:10 | 7:30 | About ten percent of customers contribute nearly sixty percent of observed Net value. |
 | 9 | 0:45 | 8:15 | Clusters are not permanent labels, Net is not profit, and there is no causal result. |
 | 10 | 0:45 | 9:00 | Segments create testable questions; actions still need A/B tests. |
 
@@ -28,11 +28,13 @@ The speaker notes are the single script to read. Numerals on the slides stay exa
 7. Pause at the final iteration: zero assignments changed and the result matches the formal model.
 8. Say: “Convergence does not guarantee the global minimum.”
 
+Keep the method settings exact: fifteen iterations, fifty seeds, twenty initializations, and ARI equals one. Do not add `about` to these settings.
+
 ## Slide 8: 50-second demo path
 
 1. Point out that the three-dimensional chart uses the real scaled and capped model inputs, and the four diamonds are centroids.
 2. Rotate the chart once. Do not use visual separation as proof that the clusters are correct.
-3. Open the example customer, but do not read the customer ID. Describe Recency, Frequency, and the cancellation count using the words in the speaker notes.
+3. Open the example customer, but do not read the customer ID. Describe one-day Recency, about thirty purchase invoices, about forty total invoices, and eight cancellations.
 4. End with: “This is a real observed customer, not a fictional persona or a response prediction.”
 
 ## Slide 10: future validation path

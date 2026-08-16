@@ -82,7 +82,7 @@ def test_speaker_notes_are_readable_and_keep_the_requested_notation():
         r"K-means\+\+|R–F|S[1-4]|[A-Za-z]+(?:[-'][A-Za-z]+)*",
         "\n".join(scripts),
     )
-    assert 720 <= len(words) <= 780
+    assert 740 <= len(words) <= 760
     assert sum(len(re.findall(r"^\d+\. ", slide, re.MULTILINE)) for slide in slides) in range(25, 31)
     for script in scripts:
         assert not re.search(r"\d", re.sub(r"S[1-4]", "", script))
@@ -92,6 +92,55 @@ def test_speaker_notes_are_readable_and_keep_the_requested_notation():
     assert "R–F" in joined
     for segment in ("S1", "S2", "S3", "S4"):
         assert segment in joined
+
+
+def test_speaker_notes_use_structured_transitions_and_approximate_business_numbers():
+    scripts = [_main_script(slide).strip() for slide in _slides()]
+    openings = (
+        "Good morning. I am Xuejian Fang.\nThis presentation examines",
+        "First, I describe the dataset.",
+        "Next, I define the analysis problem.",
+        "Before modelling, I examine three data issues.",
+        "Based on these issues, I preprocess the data.",
+        "After preprocessing, I apply K-means++ clustering.",
+        "To select k, I compare four types of evidence.",
+        "Based on this evidence, I obtain four customer profiles.",
+        "However, the result has three important boundaries.",
+        "Finally, I return to the research question.",
+    )
+    for script, opening in zip(scripts, openings, strict=True):
+        assert script.startswith(opening)
+
+    joined = "\n".join(scripts)
+    assert "about ten percent" in joined
+    assert "nearly sixty percent" in joined
+    assert "about half a million invoice lines" in joined
+    assert "about one quarter" in joined
+    for overly_precise in (
+        "twenty-four point nine three",
+        "fifty-eight point seven one",
+        "ten point five percent",
+        "four thousand, three hundred and thirty-eight",
+    ):
+        assert overly_precise not in joined
+
+
+def test_method_parameters_remain_exact_in_the_spoken_script():
+    joined = "\n".join(_main_script(slide) for slide in _slides())
+    for exact_parameter in (
+        "k equals two",
+        "k equals four",
+        "ninety-nine-point-five percentile cap",
+        "fifteen iterations",
+        "fifty seeds",
+        "twenty initializations",
+        "ARI equals one",
+        "one-hundred-pound purchase",
+        "one-day Recency",
+        "eight cancellations",
+    ):
+        assert exact_parameter in joined
+        assert f"about {exact_parameter}" not in joined
 
 
 def test_real_data_method_and_static_only_findings_contract():
