@@ -32,7 +32,23 @@ fonts:
 </div>
 
 <!--
-Good morning. I am Xuejian Fang. This project asks a simple question. If we only use how recently a customer bought, how often they bought, and their observed monetary value, can we find meaningful customer groups? I will move from invoice data to RFM features, K-means++, model evaluation, and four final behavior patterns.
+【主讲】
+
+Good morning. I am Xuejian Fang.
+Can purchasing behavior reveal meaningful customer groups?
+I represent behavior with Recency, Frequency, and Net Monetary.
+I use RFM and K-means++ to find four exploratory patterns.
+I will explain how I reached and evaluated these patterns.
+
+【本页Q&A，不读】
+
+1. 为什么研究问题只说meaningful，没有说actionable？
+
+meaningful表示这些客群在RFM行为上有清楚、稳定且可以解释的差异。项目没有营销响应或实验数据，因此不能提前保证分群一定产生可执行效果（actionable outcomes）。
+
+2. 这是不是一个预测项目？
+
+不是。项目使用无监督聚类（unsupervised clustering）总结现有客户行为，不预测未来购买、营销响应或利润。
 -->
 
 ---
@@ -46,7 +62,33 @@ Good morning. I am Xuejian Fang. This project asks a simple question. If we only
 <p class="source-note">Source: UCI Machine Learning Repository, Online Retail (ID 352)</p>
 
 <!--
-The dataset has 541,909 rows, eight fields, and 25,900 different invoice numbers. It covers December 2010 to December 2011. Here are two real invoices from Customer 17850. Invoice 536365 has seven product lines, while 536366 has two. All eight source fields are shown. InvoiceDate creates Recency; distinct InvoiceNo creates Frequency; and Quantity times UnitPrice creates Net Monetary. CustomerID is the aggregation key. StockCode, Description, and Country support auditing and context, but they are not clustering features. One row is an invoice line, not a complete order or a customer.
+【主讲】
+
+The dataset has about five hundred and forty-two thousand invoice lines, eight fields, and about twenty-six thousand invoices.
+It covers December twenty ten to December twenty eleven.
+
+This sample shows one customer with two invoices.
+The first has seven product lines, and the second has two.
+
+One customer can have many invoices, and each invoice can contain many invoice lines.
+
+Invoice date, invoice number, quantity, price, and customer ID later create RFM.
+
+So each row is an invoice line, not a complete invoice or customer.
+
+【本页Q&A，不读】
+
+1. 为什么一行不是一张完整invoice？
+
+同一个InvoiceNo会在多行重复，因为每行记录一个商品行（invoice line），包括StockCode、Quantity和UnitPrice。一张invoice可以包含多个商品行，因此不能把CSV行数当作订单数。
+
+2. Customer、Invoice和Product的关系是什么？
+
+对可识别交易而言，一个Customer可以有多张Invoice，每张Invoice属于一个Customer；一张Invoice可以有多个InvoiceLine。若建立完整规范化schema，同一种Product可以出现在多张Invoice中，因此Invoice与Product是通过InvoiceLine形成的多对多关系（many-to-many）。主页面只保留分析所需的Customer 1:N Invoice 1:N InvoiceLine。
+
+3. 为什么StockCode、Description和Country不进入聚类？
+
+正式距离只使用RFM三个客户级数值特征。这些字段用于数据审计、客户背景和敏感性检查。不能说它们不存在或没有价值，只是它们不属于本项目的正式聚类输入。
 -->
 
 ---
@@ -62,15 +104,14 @@ The dataset has 541,909 rows, eight fields, and 25,900 different invoice numbers
 
 This is an unsupervised clustering problem.
 
-First, I group the invoice lines by CustomerID.
+I group the invoice lines by customer ID.
 Each customer gets one RFM profile.
 
 Recency means days since the last valid purchase.
 Frequency counts distinct valid purchase invoices.
 Net Monetary adds all signed transaction amounts in this data period.
 
-We do not have true segment labels.
-So I cannot calculate classification accuracy.
+There are no true segment labels, so I cannot calculate classification accuracy.
 
 【本页Q&A，不读】
 
@@ -82,12 +123,9 @@ So I cannot calculate classification accuracy.
 
 Frequency希望表示购买发生的次数（buying occasions）。同一张invoice可以包含多个商品行和很多件商品；如果统计行数或件数，会把一次大量购买误认为多次购买。
 
-3. 为什么Net Monetary使用有符号金额（signed transaction amounts）？
+3. 为什么Net Monetary使用有符号金额，以及为什么不能计算accuracy？
 
 正向购买金额为正，取消或退款金额通常为负。把它们相加，才能描述当前数据期间内观察到的净交易金额（observed Net value）。这不是利润（profit），也不是客户终身价值（customer lifetime value）。
-
-4. 为什么不能计算accuracy？
-
 分类准确率（classification accuracy）需要把预测标签与真实标签（ground-truth labels）比较。本数据没有真实客群标签，所以只能使用内部聚类指标（internal clustering metrics）、稳定性和原始RFM画像评价结果。
 
 不能说：silhouette或ARI是另一种accuracy；它们衡量的是内部结构或两次聚类结果的一致性。
@@ -102,7 +140,27 @@ Frequency希望表示购买发生的次数（buying occasions）。同一张invo
 <EdaTriptychEn />
 
 <!--
-EDA shows three main issues. First, 24.93 percent of invoice lines have no CustomerID, so they cannot be linked to a customer profile. Second, returns can completely change the value story. Customer 16446 has more than 168 thousand pounds in positive purchases, but only 2 pounds 90 in Net value. Gross value would create a false high-value customer. Third, Frequency and Net Monetary have long right tails, so a few extreme values may dominate distances and centroids.
+【主讲】
+
+EDA shows three issues.
+
+First, twenty-four point nine three percent of invoice lines have no customer ID, so I cannot link them to customers.
+
+Second, returns can change the value story.
+This customer's Gross value exceeds one hundred and sixty-eight thousand pounds, but its Net value is only two pounds and ninety pence.
+Gross would falsely describe this customer as high-value.
+
+Third, Frequency and Net Monetary have long right tails, so extreme customers may dominate distances and centroids.
+
+【本页Q&A，不读】
+
+1. 缺失CustomerID的交易是否应该删除？
+
+它们仍是真实交易，也保留在原始数据审计中；但无法可靠聚合到某位客户，所以不能进入customer-level RFM。不能说这些交易无效，只能说它们不适合本项目的客户分群单位。
+
+2. Gross与Net案例说明了什么？长尾为什么重要？
+
+该客户的Gross金额很高，但几乎全部被负向交易抵消。只使用Gross会制造虚假的高价值画像。与此同时，F和M的长尾会让少数极端客户强烈影响欧氏距离和centroid，因此需要比较变换和截尾方案。
 -->
 
 ---
@@ -114,7 +172,33 @@ EDA shows three main issues. First, 24.93 percent of invoice lines have no Custo
 <PreprocessingFlow />
 
 <!--
-I first remove 5,268 extra exact duplicate rows. This leaves 536,641 rows. I keep 401,604 signed transaction lines with a known CustomerID. Among them, 392,692 valid positive purchase lines define Recency and Frequency. The final analysis has 4,338 customers. A cancellation does not increase or reduce Frequency. It only adjusts Net Monetary with its negative amount. For example, a 100-pound purchase with a full cancellation gives Frequency one and Net Monetary zero. I cap only the model copy of Frequency and Net Monetary at the 99.5th percentile. This affects 29 customers but deletes nobody. StandardScaler then makes the three feature scales comparable.
+【主讲】
+
+I remove five thousand, two hundred and sixty-eight extra exact duplicates.
+Then I keep about four hundred thousand signed transaction lines with known customer IDs.
+Valid purchases create RFM profiles for four thousand, three hundred and thirty-eight customers.
+
+A cancellation does not change Frequency.
+Its negative amount only adjusts Net Monetary.
+A fully cancelled one-hundred-pound purchase has Frequency one and Net Monetary zero.
+
+I cap the model copy at the ninety-nine-point-five percentile.
+This affects twenty-nine customers but removes nobody.
+StandardScaler makes the feature scales comparable.
+
+【本页Q&A，不读】
+
+1. 为什么删除exact duplicates？
+
+这里删除的是所有字段完全相同的额外副本（exact duplicate copies），避免同一商品行被重复计入金额和订单画像。没有按部分字段盲目去重，原始CSV也保持只读。
+
+2. 取消订单如何影响R、F和Net M？
+
+R和F只由有效正向购买定义，因此C开头的取消invoice不会增加或扣减Frequency。它的有符号负金额会调整同一客户观察窗口内的Net Monetary。负净额只代表当前窗口内净额为负，不代表完整历史中退款超过全部付款。
+
+3. cap和StandardScaler分别解决什么问题？
+
+99.5%上端截尾只限制模型副本中的极端F和M，不删除客户，原始值仍用于画像。StandardScaler让R、F、M的数值尺度可比较，但不保证三项业务权重绝对相同，也不会把结果统一映射到零到一。
 -->
 
 ---
@@ -128,29 +212,25 @@ I first remove 5,268 extra exact duplicate rows. This leaves 536,641 rows. I kee
 <!--
 【主讲】
 
-This animation uses 4,338 real customer profiles.
-The model uses all three scaled and capped RFM features.
-Here, I only show R–F.
+This animation uses customer profiles.
+The model uses scaled and capped RFM features; I only show R–F.
 
 The first centroid is selected at random.
 
-For each later centroid, K-means++ uses squared distance from the nearest chosen centroid.
-Farther customers get a higher probability.
-It does not always choose the farthest customer.
+K-means++ gives farther customers a higher probability based on squared distance.
+It does not always select the farthest customer.
 Orange is an initialization weight, not a cluster.
 
-After initialization, K-means repeats assignment and update.
-Assignment uses the nearest centroid.
-Update recalculates each centroid as the cluster mean.
-Hollow diamonds are old centroids.
-Solid diamonds are updated centroids.
+Then K-means repeats assignment and update.
+Assignment selects the nearest centroid.
+Update recalculates the cluster mean.
+Hollow diamonds are old centroids, and solid diamonds are updated centroids.
 
-Across 15 iterations, fewer assignments change.
-At iteration 15, zero changes means convergence.
-It matches the final model.
+Across fifteen iterations, assignment changes decrease.
+At iteration fifteen, zero changes means convergence.
 
 Convergence does not guarantee the global optimum.
-So I compare 50 seeds and use 20 initializations.
+So I compare fifty seeds and twenty initializations.
 
 【本页Q&A，不读】
 
@@ -166,12 +246,9 @@ So I compare 50 seeds and use 20 initializations.
 
 正式K-means使用平方欧氏距离（squared Euclidean distance）。centroid是cluster内各点的均值位置，因此它与欧氏距离的目标函数相匹配。若改成Manhattan distance或其他距离，通常意味着需要改用不同算法，不能仍把它简单称为同一个K-means模型。
 
-4. centroid、assignment和update分别是什么？
+4. centroid、assignment和update分别是什么？为什么收敛后还要比较多个seeds？
 
 centroid是一个cluster在模型空间中的均值位置。assignment把每位客户分配给最近的centroid；update再根据新成员重新计算centroid。不断重复，直到分配不再变化或满足收敛条件（convergence criteria）。
-
-5. 为什么收敛以后还不能说找到global optimum？
-
 K-means可能停在局部最优解（local optimum），结果可能受初始centroid影响。因此实验使用50个固定seeds比较初始化稳定性，最终模型使用20次初始化（n_init=20），降低依赖一次幸运起点的风险。
 
 补充：scikit-learn使用greedy K-means++，会在D²权重下尝试多个候选并选择当前potential更好的候选；这不改变后续K-means循环。
@@ -188,7 +265,38 @@ K-means可能停在局部最优解（local optimum），结果可能受初始cen
 <KEvidenceGrid />
 
 <!--
-I use four types of evidence. Inertia falls quickly before k equals 4, then the improvement becomes smaller. Silhouette is highest at k equals 2, but that solution gives only a broad split between most customers and high-value customers. At k equals 4, silhouette is still strong at 0.563. Median pairwise ARI is 1, so the 50 different starts give the same customer assignment. The smallest group is 1.18 percent, still above my one-percent check line. Therefore, k equals 4 is a practical balance of compactness, separation, stability, size, and clear profiles. These internal scores are not accuracy, and k equals 4 is not the only possible truth.
+【主讲】
+
+I use four types of evidence.
+
+Inertia falls quickly before k equals four.
+
+Silhouette is highest at k equals two, but that split is too broad.
+At k equals four, silhouette is still zero point five six three.
+
+Median pairwise ARI is one across fifty different starts.
+The smallest group is one point one eight percent.
+
+So k equals four balances separation, stability, group size, and clear profiles.
+These scores are not accuracy, and k equals four is not the only possible truth.
+
+【本页Q&A，不读】
+
+1. inertia和elbow分别表示什么？
+
+inertia是每个点到所属centroid的平方距离总和，越小表示簇内更紧密。随着k增加，inertia必然下降；elbow关注下降速度何时明显变缓，而不是机械选择最小inertia。
+
+2. silhouette在k=2最高，为什么选择k=4？
+
+silhouette比较点与本簇的紧密程度和与最近其他簇的分离程度。k=2虽然分数最高，但只形成“多数客户与高价值客户”的宽泛切分。k=4仍有较强silhouette，并提供更有区分度的稳定画像，因此综合证据选择k=4。
+
+3. median pairwise ARI为1说明什么？
+
+ARI比较不同运行的客户分配是否一致，并校正随机一致。中位数为1表示这50个起点在该设置下得到相同分配，说明初始化稳定；它不表示与真实标签完全一致，也不是accuracy。
+
+4. 最小簇只有1.18%，是否说明k=4错误？
+
+1%只是预先设定的检查线，不是自动淘汰规则。该簇仍有51位客户且画像一致。k=4是基于当前数据和口径的实用选择，不是唯一客观真值。
 -->
 
 ---
@@ -200,28 +308,26 @@ I use four types of evidence. Inertia falls quickly before k equals 4, then the 
 <!--
 【主讲】
 
-S1 is long-inactive, and S2 is regular.
-S3 is active and high-value.
-S4 has the highest Frequency and value.
-This gives a clear behavior pattern.
+The profiles form a ladder from long-inactive S1 to top-frequency high-value S4.
 
-Together, S3 and S4 contain 457 customers.
-They are about 10.5 percent of all customers.
-But they contribute 58.71 percent of observed Net value.
+Together, S3 and S4 contain four hundred and fifty-seven customers.
+They are about ten point five percent, but contribute fifty-eight point seven one percent of observed Net value.
 
-This 3D chart uses the scaled and capped model inputs.
+This three-dimensional chart uses scaled and capped inputs.
 The diamonds are centroids.
-I do not use PCA, because RFM already has three features.
+I keep the three RFM axes instead of using PCA.
 
-Customer 13777 has Recency 1, Frequency 33, and Net Monetary of 25,748 pounds.
-Its 41 invoices include eight cancellations.
+This example customer is close to the S4 centroid.
+It has Recency one and Frequency thirty-three.
+Eight of its forty-one invoices are cancellations.
 This is an observation, not a response prediction.
 
 【本页Q&A，不读】
 
-1. 这四个cluster的实际意义是什么？
+1. 这四个cluster的实际意义是什么？S4只有51人是否只是异常值？
 
 它们是在当前观察窗口中，根据RFM距离总结出的探索性行为模式（exploratory behavior patterns）。S1到S4表现出从长期不活跃、常规购买，到近期高价值和最高频高价值的行为阶梯。它们用于总结和筛选客户，不是真实标签或永久身份。
+51人约占全部客户的1.18%，超过项目预设的1%检查线。S4在原始RFM画像中具有一致的高Frequency和高Net Monetary，而且定向敏感性分析没有显示它完全由重复行、特殊StockCode或地域造成。因此它值得作为顶端行为群体解释，但不能说它是客观存在的真实客户类型。
 
 2. 为什么3D图不使用PCA？
 
@@ -229,15 +335,11 @@ This is an observation, not a response prediction.
 
 不能说：二维或三维图看起来分得开，所以证明cluster正确。可视化只帮助解释，模型选择还需要inertia、silhouette、ARI、簇规模和原始画像。
 
-3. S4只有51人，是否只是异常值？
-
-51人约占全部客户的1.18%，超过项目预设的1%检查线。S4在原始RFM画像中具有一致的高Frequency和高Net Monetary，而且定向敏感性分析没有显示它完全由重复行、特殊StockCode或地域造成。因此它值得作为顶端行为群体解释，但不能说它是客观存在的真实客户类型。
-
-4. 为什么Customer 13777有41张invoice，但Frequency只有33？
+3. 为什么Customer 13777有41张invoice，但Frequency只有33？
 
 Frequency只统计33张有效正向购买invoice。其余8张是C开头的取消记录（cancellation invoices），不会增加或扣减Frequency，只通过负金额调整Net Monetary。选择13777是因为它接近S4 centroid，适合作为真实代表案例，不是因为它最极端。
 
-5. 这些segments能够直接产生商业价值吗？
+4. 这些segments能够直接产生商业价值吗？
 
 它们可以帮助提出客户管理假设（customer-management hypotheses），例如S1唤回、S2促进复购、S3留存和S4高接触服务。但模型没有营销响应数据（response data），不能预测谁一定会回应，也不能证明这些策略会带来利润。实际效果仍需通过A/B tests验证。
 
@@ -266,7 +368,29 @@ Frequency只统计33张有效正向购买invoice。其余8张是C开头的取消
 <div class="warning-strip"><b>Interpretation boundary:</b> these are stable exploratory behavior patterns in this dataset—not permanent customer identities or proven treatment effects.</div>
 
 <!--
-The result has three boundaries. For the data, I can only analyze customers with an ID, and the window is about one year. Some returns may also refer to purchases before the window. For the model, there are no true labels, and the result depends on k, scaling, and capping. Capping also compresses differences among the highest customers. For business use, Net value is not profit or customer lifetime value, and a cluster does not predict response. These groups are exploratory behavior patterns, not permanent identities or proven marketing rules.
+【主讲】
+
+The result has three boundaries.
+
+For data, I only analyze known customers within about one year.
+Some returns may refer to earlier purchases.
+
+For the model, there are no true labels.
+The result depends on k, scaling, and capping, and the cap compresses top differences.
+
+For business use, Net value is not profit or customer lifetime value.
+Clusters do not predict response or prove causality.
+They are exploratory patterns, not permanent identities.
+
+【本页Q&A，不读】
+
+1. 这些数据限制会怎样影响解释？
+
+未知CustomerID无法进入客户级分析；约一年的观察窗口可能遗漏更早购买；部分退货可能对应窗口开始前的订单。因此结果描述的是当前可观察数据，不是客户的完整历史。
+
+2. 模型和业务限制的核心边界是什么？
+
+cluster会随k、缩放和截尾口径变化，也没有真实标签证明其唯一正确。Net value不是利润或CLV，客群与价值的关联也不证明某项营销措施会造成结果（causality）。不能把segment直接当作永久身份或响应预测。
 -->
 
 ---
@@ -287,5 +411,28 @@ The result has three boundaries. For the data, I can only analyze customers with
 <p class="closing-line">The segments support better questions; future data must validate the actions.</p>
 
 <!--
-The answer to my research question is yes. RFM reveals four meaningful and stable exploratory behavior patterns in this dataset. About 10.5 percent of customers contribute 58.71 percent of observed Net value. But the segments do not predict response. They create testable hypotheses: reactivate S1, encourage repeat buying in S2, retain S3, and protect S4. Next, I would update RFM with future transactions, track movement between groups, run controlled A/B tests, and measure future behavior. With extra profit, product-category, and response data, the decisions could become more specific. The segments support better questions; future evidence must validate the actions. Thank you.
+【主讲】
+
+RFM reveals four meaningful and stable exploratory behavior patterns.
+
+About ten point five percent of customers contribute fifty-eight point seven one percent of observed Net value.
+The segments do not predict response.
+
+They create testable hypotheses: reactivate S1, encourage repeat buying in S2, retain S3, and protect S4.
+
+Next, I would update RFM, track segment movement, run controlled A/B tests, and measure future behavior.
+
+The segments support better questions.
+Future evidence must validate the actions.
+Thank you.
+
+【本页Q&A，不读】
+
+1. 为什么可以说meaningful和stable？
+
+meaningful来自四群在原始RFM画像上的清楚行为差异；stable主要指固定预处理和k=4时，对不同初始化的结果一致，并且定向敏感性没有破坏主要画像。不能把stable解释为这些群体永远不变或是真实标签。
+
+2. 为什么未来工作需要A/B tests和额外数据？
+
+当前分群只能提出策略假设。A/B tests用于比较措施是否真正改变复购、留存或未来Net value；利润、商品类别和响应数据可以让决策目标更接近实际业务。没有实验前不能声称分群造成收益。
 -->

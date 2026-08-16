@@ -2,6 +2,8 @@
 
 This file is not an extra slide. It is a rehearsal checklist for the strict 10-page final deck.
 
+The speaker notes are the single script to read. Numerals on the slides stay exact, while the spoken script writes numbers and dates in readable words. Customer IDs and invoice numbers remain visible evidence but are not read aloud. Keep `S1–S4`, `K-means++`, and `R–F` unchanged.
+
 | Slide | Target | Total | One sentence that must be clear |
 |---:|---:|---:|---|
 | 1 | 0:25 | 0:25 | The question is whether RFM can reveal meaningful customer groups. |
@@ -17,20 +19,20 @@ This file is not an extra slide. It is a rehearsal checklist for the strict 10-p
 
 ## Slide 6: click path
 
-1. Start with all 4,338 customers in gray and state that calculation uses full 3D RFM.
+1. Start with all customers in gray and state that calculation uses the full three-dimensional RFM space.
 2. Click for C1 and say that the first center is random.
 3. Click three times for C2, C3, and C4. Orange is the relative D² initialization weight—not a cluster color—and is clipped only for display.
 4. Say: “Farther points receive a higher probability; K-means++ does not simply choose the farthest point.”
 5. Pause at iteration 1. Point colors show assignment; hollow diamonds are old centroids; arrows and solid diamonds show recentering.
 6. Move quickly through iterations 2–14. Say that outlined customers changed assignment and the number generally falls as the centroids stabilize.
-7. Pause at iteration 15: zero assignments changed and ARI=1 versus the formal model.
+7. Pause at the final iteration: zero assignments changed and the result matches the formal model.
 8. Say: “Convergence does not guarantee the global minimum.”
 
 ## Slide 8: 50-second demo path
 
-1. Point out that the 3D chart uses the real scaled and capped model inputs, and the four diamonds are centroids.
-2. Rotate the 3D chart once. Do not use visual separation as proof that the clusters are correct.
-3. Open `Customer 13777` and state: `R=1`, `F=33`, `Net M=£25,748.35`, `41 recorded invoices`, and `8 cancellations`.
+1. Point out that the three-dimensional chart uses the real scaled and capped model inputs, and the four diamonds are centroids.
+2. Rotate the chart once. Do not use visual separation as proof that the clusters are correct.
+3. Open the example customer, but do not read the customer ID. Describe Recency, Frequency, and the cancellation count using the words in the speaker notes.
 4. End with: “This is a real observed customer, not a fictional persona or a response prediction.”
 
 ## Slide 10: future validation path
@@ -41,9 +43,9 @@ Say the sequence in order: “Update RFM with future transactions, track segment
 
 - Frequency: “It counts distinct valid purchase invoices because I want buying occasions, not product rows or units.”
 - Net Monetary: “Cancellations do not change Frequency; their negative amounts adjust value in the observed window.”
-- 99.5% cap: “It limits extreme influence in the model copy, deletes no customers, and keeps raw values for interpretation.”
+- Cap: “It limits extreme influence in the model copy, deletes no customers, and keeps raw values for interpretation.”
 - K-means++: “It gives farther customers a higher probability of becoming a starting center; the later K-means loop is the same.”
 - Greedy K-means++: “Scikit-learn samples several candidates using D² weights and keeps the candidate that best reduces the current potential.”
 - k=4: “k=2 separates strongly but is too broad. k=4 gives a useful and stable four-level profile.”
-- ARI=1: “Different starting seeds produced the same assignments here. It does not prove true labels.”
+- ARI: “Different starting seeds produced the same assignments here. It does not prove true labels.”
 - Business meaning: “The groups support customer-management hypotheses, not guaranteed outcomes.”

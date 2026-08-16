@@ -7,7 +7,7 @@
       <div><strong>01 Dec 2010–09 Dec 2011</strong><span>observation window</span></div>
     </div>
     <div>
-      <div class="table-title"><b>Customer 17850 · two invoices</b><span>all 8 original fields</span></div>
+      <div class="table-title"><b>One customer · two real invoices</b><span>all 8 original fields</span></div>
       <table>
         <thead><tr><th>InvoiceNo</th><th>StockCode</th><th>Description</th><th>Quantity</th><th>InvoiceDate</th><th>UnitPrice</th><th>CustomerID</th><th>Country</th></tr></thead>
         <tbody>
@@ -21,7 +21,7 @@
       </table>
     </div>
     <div class="dataset-bottom">
-      <div class="relationship-line"><b>Customer 17850</b><span>1 : N</span><b>Invoices 536365, 536366</b><span>1 : N</span><b class="accent-label">Invoice lines</b></div>
+      <div class="relationship-line"><b>Customer</b><span>1 : N</span><b>Invoice</b><span>1 : N</span><b class="accent-label">Invoice line</b></div>
       <div class="field-map">
         <span><b>R</b> ← InvoiceDate</span>
         <span><b>F</b> ← distinct InvoiceNo</span>

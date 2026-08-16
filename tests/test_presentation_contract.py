@@ -18,6 +18,12 @@ def _visible_markdown(filename: str = "slides.md") -> str:
     return re.sub(r"<!--[\s\S]*?-->", "", markdown)
 
 
+def _main_script(slide: str) -> str:
+    match = re.search(r"【主讲】([\s\S]*?)【本页Q&A，不读】", slide)
+    assert match is not None
+    return match.group(1)
+
+
 def test_final_english_deck_has_exactly_ten_pages_and_only_name():
     slides = _slides()
     assert len(slides) == 10
@@ -65,6 +71,27 @@ def test_dataset_shows_all_source_fields_and_two_real_invoices():
         assert field in source
     assert "536365" in source and "536366" in source and "17850" in source
     assert "audit and context" in source
+    assert "One customer · two real invoices" in source
+    assert '<b>Customer</b><span>1 : N</span><b>Invoice</b>' in source
+
+
+def test_speaker_notes_are_readable_and_keep_the_requested_notation():
+    slides = _slides()
+    scripts = [_main_script(slide) for slide in slides]
+    words = re.findall(
+        r"K-means\+\+|R–F|S[1-4]|[A-Za-z]+(?:[-'][A-Za-z]+)*",
+        "\n".join(scripts),
+    )
+    assert 720 <= len(words) <= 780
+    assert sum(len(re.findall(r"^\d+\. ", slide, re.MULTILINE)) for slide in slides) in range(25, 31)
+    for script in scripts:
+        assert not re.search(r"\d", re.sub(r"S[1-4]", "", script))
+        assert not re.search(r"\b(?:Customer|Invoice)\s+\d+", script, re.IGNORECASE)
+    joined = "\n".join(scripts)
+    assert "K-means++" in joined
+    assert "R–F" in joined
+    for segment in ("S1", "S2", "S3", "S4"):
+        assert segment in joined
 
 
 def test_real_data_method_and_static_only_findings_contract():
