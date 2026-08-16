@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <title>RFM Presentation Demo</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="demo-shell">
+      <header class="demo-header">
+        <div>
+          <strong>RFM customer explorer</strong>
+          <span id="view-note">4,338 customers · model coordinates</span>
+        </div>
+        <nav aria-label="Demo views">
+          <button data-view="3d">3D</button>
+          <button data-view="rf">R–F</button>
+          <button data-view="rm">R–M</button>
+          <button data-view="fm">F–M</button>
+          <button data-view="customer-13777">Customer 13777</button>
+        </nav>
+      </header>
+      <section id="status" class="status">Loading presentation data…</section>
+      <section id="plot" class="plot" aria-live="polite"></section>
+      <section id="detail" class="detail" hidden></section>
+    </main>
+    <script src="plotly.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

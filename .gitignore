@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+artifacts/
+docs/
+resource/
+presentation/dist/
+presentation/node_modules/
+*.sqlite
+*.sqlite3
+*.joblib

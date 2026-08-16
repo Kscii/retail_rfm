@@ -1,0 +1,57 @@
+name: Deploy presentation to GitHub Pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.3.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: presentation/pnpm-lock.yaml
+      - uses: actions/configure-pages@v5
+      - name: Check public release boundary
+        run: |
+          test ! -e resource
+          test ! -e docs
+          test ! -e artifacts
+          ! find . -type f \( -name '*.sqlite' -o -name '*.sqlite3' -o -name '*.joblib' -o -name 'Online Retail.csv' \) -print -quit | grep -q .
+      - name: Install locked presentation dependencies
+        working-directory: presentation
+        run: pnpm install --frozen-lockfile
+      - name: Build Slidev for the repository base path
+        working-directory: presentation
+        run: pnpm build:pages
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: presentation/dist/pages
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,23 @@
+{
+  "name": "retail-rfm-presentation",
+  "private": true,
+  "packageManager": "pnpm@11.3.0",
+  "scripts": {
+    "dev": "slidev slides.md --port 3030 --open false",
+    "build": "slidev build slides.md --base ./ --out dist/final",
+    "build:pages": "slidev build slides.md --base /retail_rfm/ --out dist/pages",
+    "export": "slidev export slides.md --output dist/online-retail-rfm-final.pdf --executable-path /usr/bin/chromium",
+    "notes": "node scripts/export-notes.mjs slides.md dist/speaker-notes.en.md \"Online Retail Final Presentation — Speaker Notes\"",
+    "dev:zh": "slidev slides.zh.md --port 3030 --open false",
+    "build:zh": "slidev build slides.zh.md --base ./ --out dist/zh",
+    "export:zh": "slidev export slides.zh.md --output dist/online-retail-rfm.zh-CN.pdf --executable-path /usr/bin/chromium",
+    "notes:zh": "node scripts/export-notes.mjs slides.zh.md dist/speaker-notes.zh-CN.md \"Online Retail 中文讲稿\"",
+    "capture:fallback": "node scripts/capture-static-fallback.mjs",
+    "smoke:browser": "node scripts/smoke-browser.mjs"
+  },
+  "devDependencies": {
+    "@slidev/cli": "52.18.0",
+    "@slidev/theme-default": "0.25.0",
+    "playwright-chromium": "1.62.1"
+  }
+}
