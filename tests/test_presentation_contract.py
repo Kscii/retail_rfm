@@ -13,6 +13,11 @@ def _slides(filename: str = "slides.md") -> list[str]:
     return re.split(r"\n---\n", markdown)[1:]
 
 
+def _visible_markdown(filename: str = "slides.md") -> str:
+    markdown = (PRESENTATION / filename).read_text(encoding="utf-8")
+    return re.sub(r"<!--[\s\S]*?-->", "", markdown)
+
+
 def test_final_english_deck_has_exactly_ten_pages_and_only_name():
     slides = _slides()
     assert len(slides) == 10
@@ -23,7 +28,9 @@ def test_final_english_deck_has_exactly_ten_pages_and_only_name():
     assert "Co-author" not in slides[0]
     assert not re.search(r"student\s*id|学号|\bSID\b", slides[0], re.IGNORECASE)
     assert sum("<FindingsDemo" in slide for slide in slides) == 1
-    assert not re.search(r"[\u3400-\u9fff]", (PRESENTATION / "slides.md").read_text(encoding="utf-8"))
+    # Chinese rehearsal cues and Q&A may live inside Slidev speaker-note comments,
+    # but the audience-facing slide content must remain English-only.
+    assert not re.search(r"[\u3400-\u9fff]", _visible_markdown())
 
 
 def test_chinese_reference_deck_is_preserved():
@@ -79,6 +86,14 @@ def test_real_data_method_and_static_only_findings_contract():
     assert "opacity: capped ? 0.65 : 0.35" in static_app
     assert 'size: 4, symbol: "diamond"' in static_app
     assert "data.schema_version !== 3" in static_app
+
+
+def test_presentation_assets_resolve_from_the_deployment_base():
+    method = (PRESENTATION / "components/KMeansRealData.vue").read_text(encoding="utf-8")
+    findings = (PRESENTATION / "components/FindingsDemo.vue").read_text(encoding="utf-8")
+    for source in (method, findings):
+        assert "import.meta.env.BASE_URL" in source
+        assert "document.baseURI" not in source
 
 
 def test_pages_workflow_uses_repository_base_and_safe_public_boundary():

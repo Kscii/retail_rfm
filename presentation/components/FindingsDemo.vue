@@ -3,8 +3,9 @@ import { useNav } from '@slidev/client'
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
 const { isPrintMode } = useNav()
-const staticSrc = new URL('static-demo/index.html?view=3d', document.baseURI).href
-const printImage = new URL('images/slide8-demo.png', document.baseURI).href
+const publicBase = new URL(import.meta.env.BASE_URL, window.location.origin)
+const staticSrc = new URL('static-demo/index.html?view=3d', publicBase).href
+const printImage = new URL('images/slide8-demo.png', publicBase).href
 const findingsRoot = ref(null)
 const demoFrame = ref(null)
 const resizeTimers = new Set()

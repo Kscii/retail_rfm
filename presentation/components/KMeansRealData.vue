@@ -1,5 +1,6 @@
 <script setup>
-const asset = name => new URL(`static-demo/${name}`, document.baseURI).href
+const publicBase = new URL(import.meta.env.BASE_URL, window.location.origin)
+const asset = name => new URL(`static-demo/${name}`, publicBase).href
 </script>
 
 <template>

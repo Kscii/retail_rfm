@@ -6,6 +6,7 @@ const outputDir = path.resolve('dist/browser-smoke')
 fs.mkdirSync(outputDir, { recursive: true })
 const baseUrl = new URL(process.env.SLIDEV_URL || 'http://localhost:3030/')
 const slideUrl = number => new URL(String(number), baseUrl).href
+const presenterUrl = number => new URL(`presenter/${number}`, baseUrl).href
 const allowedOrigin = baseUrl.origin
 
 const browser = await chromium.launch({
@@ -164,6 +165,32 @@ report.checks.studentIdText = await page.getByText(/student\s*id|sid/i).count()
 report.checks.visibleCjk = await page.locator('body').evaluate(body => /[\u3400-\u9fff]/.test(body.innerText))
 await page.screenshot({ path: path.join(outputDir, 'slide1-1280x720.png') })
 
+await page.setViewportSize({ width: 1440, height: 900 })
+await page.goto(presenterUrl(8), { waitUntil: 'domcontentloaded' })
+const presenterDemoElement = page.locator('iframe.live-demo-frame:visible').first()
+await presenterDemoElement.waitFor({ state: 'visible' })
+const presenterDemoSrc = await presenterDemoElement.getAttribute('src')
+const presenterDemoFrame = await (await presenterDemoElement.elementHandle()).contentFrame()
+if (!presenterDemoFrame) throw new Error('Presenter static iframe was not found')
+await presenterDemoFrame.locator('#plot').waitFor({ state: 'visible' })
+await presenterDemoFrame.locator('canvas').first().waitFor({ state: 'visible' })
+report.checks.presenterSlide8 = {
+  src: presenterDemoSrc,
+  canvasCount: await presenterDemoFrame.locator('canvas').count(),
+  customerCount: await presenterDemoFrame.getByText(/4,338 customers/).count(),
+}
+await page.screenshot({ path: path.join(outputDir, 'presenter-slide8-1440x900.png') })
+
+await page.goto(presenterUrl(6), { waitUntil: 'domcontentloaded' })
+const presenterAnimationImages = page.locator('[data-kmeans-step]:visible')
+await presenterAnimationImages.first().waitFor({ state: 'visible' })
+report.checks.presenterSlide6 = await presenterAnimationImages.evaluateAll(images => ({
+  count: images.length,
+  loaded: images.filter(image => image.complete && image.naturalWidth > 0).length,
+  sources: images.map(image => image.currentSrc || image.src),
+  uniqueSources: [...new Set(images.map(image => image.currentSrc || image.src))],
+}))
+
 report.checks.allSlides = []
 for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 720 }]) {
   await page.setViewportSize(viewport)
@@ -204,6 +231,10 @@ if (report.checks.width1280.horizontalOverflow) throw new Error('1280px viewport
 if (report.checks.titleName !== 1 || report.checks.supervisor !== 1 || report.checks.supervisedBy !== 0 || report.checks.englishTitle !== 1 || report.checks.studentIdText !== 0)
   throw new Error('Title identity contract failed')
 if (report.checks.visibleCjk) throw new Error('Chinese text remains in the final English deck')
+if (report.checks.presenterSlide8.canvasCount < 1 || report.checks.presenterSlide8.customerCount < 1 || report.checks.presenterSlide8.src.includes('/presenter/static-demo/'))
+  throw new Error(`Presenter slide 8 asset contract failed: ${JSON.stringify(report.checks.presenterSlide8)}`)
+if (report.checks.presenterSlide6.loaded !== report.checks.presenterSlide6.count || report.checks.presenterSlide6.uniqueSources.length !== 20 || report.checks.presenterSlide6.sources.some(source => source.includes('/presenter/static-demo/')))
+  throw new Error(`Presenter slide 6 asset contract failed: ${JSON.stringify(report.checks.presenterSlide6)}`)
 const invalidSlide = report.checks.allSlides.find(check =>
   check.scrollWidth > check.clientWidth || check.scrollHeight > check.clientHeight || check.hasCjk)
 if (invalidSlide) throw new Error(`Slide layout/language contract failed: ${JSON.stringify(invalidSlide)}`)

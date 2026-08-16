@@ -58,7 +58,39 @@ The dataset has 541,909 rows, eight fields, and 25,900 different invoice numbers
 <RfmFlow />
 
 <!--
-I define this as customer-level unsupervised clustering. Recency is the number of days since the customer's last valid purchase. Frequency is the number of distinct valid purchase invoices, not the number of product rows or units. Net Monetary is the sum of all signed transaction amounts in the observation window. Each customer becomes one RFM profile. There are no known segment labels, so classification accuracy cannot be calculated.
+【主讲】
+
+This is an unsupervised clustering problem.
+
+First, I group the invoice lines by CustomerID.
+Each customer gets one RFM profile.
+
+Recency means days since the last valid purchase.
+Frequency counts distinct valid purchase invoices.
+Net Monetary adds all signed transaction amounts in this data period.
+
+We do not have true segment labels.
+So I cannot calculate classification accuracy.
+
+【本页Q&A，不读】
+
+1. 为什么必须先把invoice lines转换成customer-level RFM？
+
+原始数据的一行只是一个商品行（invoice line），不是一个客户。聚类输入需要每位客户只有一条行为画像（customer-level profile），所以必须按CustomerID聚合。不能把541,909个商品行说成541,909位客户。
+
+2. 为什么Frequency统计不同的invoice，而不是商品行数或购买件数？
+
+Frequency希望表示购买发生的次数（buying occasions）。同一张invoice可以包含多个商品行和很多件商品；如果统计行数或件数，会把一次大量购买误认为多次购买。
+
+3. 为什么Net Monetary使用有符号金额（signed transaction amounts）？
+
+正向购买金额为正，取消或退款金额通常为负。把它们相加，才能描述当前数据期间内观察到的净交易金额（observed Net value）。这不是利润（profit），也不是客户终身价值（customer lifetime value）。
+
+4. 为什么不能计算accuracy？
+
+分类准确率（classification accuracy）需要把预测标签与真实标签（ground-truth labels）比较。本数据没有真实客群标签，所以只能使用内部聚类指标（internal clustering metrics）、稳定性和原始RFM画像评价结果。
+
+不能说：silhouette或ARI是另一种accuracy；它们衡量的是内部结构或两次聚类结果的一致性。
 -->
 
 ---
@@ -94,7 +126,57 @@ I first remove 5,268 extra exact duplicate rows. This leaves 536,641 rows. I kee
 <KMeansRealData />
 
 <!--
-This animation uses the actual 4,338 customer profiles, not artificial groups. The calculation always uses all three scaled and capped RFM features; the slide only displays Recency and Frequency. The first center is selected at random. For each later center, orange intensity shows the squared distance from the nearest chosen center. This orange is an initialization weight, not a cluster color. Farther customers receive a higher probability, but the method does not simply choose the farthest point. After four starting centers, each graph shows one complete K-means iteration. Customer colors show the assignment, hollow diamonds show the old centroids, arrows show movement, and solid diamonds show the recalculated means. I will move quickly through all 15 iterations. The number of changed assignments generally becomes smaller, reaching zero at iteration 15. The result matches the final model assignment. Scikit-learn uses a greedy K-means++ implementation that evaluates several weighted candidates; this detail does not change the later K-means loop. Convergence still does not prove a global optimum, so I also compare 50 seeds and use 20 initializations for the final model.
+【主讲】
+
+This animation uses 4,338 real customer profiles.
+The model uses all three scaled and capped RFM features.
+Here, I only show R–F.
+
+The first centroid is selected at random.
+
+For each later centroid, K-means++ uses squared distance from the nearest chosen centroid.
+Farther customers get a higher probability.
+It does not always choose the farthest customer.
+Orange is an initialization weight, not a cluster.
+
+After initialization, K-means repeats assignment and update.
+Assignment uses the nearest centroid.
+Update recalculates each centroid as the cluster mean.
+Hollow diamonds are old centroids.
+Solid diamonds are updated centroids.
+
+Across 15 iterations, fewer assignments change.
+At iteration 15, zero changes means convergence.
+It matches the final model.
+
+Convergence does not guarantee the global optimum.
+So I compare 50 seeds and use 20 initializations.
+
+【本页Q&A，不读】
+
+1. 普通K-means和K-means++有什么区别？
+
+这里的普通基线使用随机初始化（random initialization）。K-means++只改变初始centroid的选择方式；完成初始化以后，两者都执行相同的assignment和centroid update循环。K-means++通常更稳定，但不能预设它在所有数据上都一定显著更好。
+
+2. K-means++是不是每次都选择最远的点？
+
+不是。后续点被选中的概率与它到最近已有centroid的平方距离（squared distance，D²）有关。距离越远，概率越高，但不是确定选择最远点。页面的橙色只是经过裁切的相对初始化权重（initialization weight），不是cluster颜色或精确概率。
+
+3. 正式模型使用什么距离？能否换成其他距离？
+
+正式K-means使用平方欧氏距离（squared Euclidean distance）。centroid是cluster内各点的均值位置，因此它与欧氏距离的目标函数相匹配。若改成Manhattan distance或其他距离，通常意味着需要改用不同算法，不能仍把它简单称为同一个K-means模型。
+
+4. centroid、assignment和update分别是什么？
+
+centroid是一个cluster在模型空间中的均值位置。assignment把每位客户分配给最近的centroid；update再根据新成员重新计算centroid。不断重复，直到分配不再变化或满足收敛条件（convergence criteria）。
+
+5. 为什么收敛以后还不能说找到global optimum？
+
+K-means可能停在局部最优解（local optimum），结果可能受初始centroid影响。因此实验使用50个固定seeds比较初始化稳定性，最终模型使用20次初始化（n_init=20），降低依赖一次幸运起点的风险。
+
+补充：scikit-learn使用greedy K-means++，会在D²权重下尝试多个候选并选择当前potential更好的候选；这不改变后续K-means循环。
+
+不能说：iteration 15收敛证明cluster是真实标签，或证明模型已经找到唯一正确答案。
 -->
 
 ---
@@ -116,9 +198,50 @@ I use four types of evidence. Inertia falls quickly before k equals 4, then the 
 <FindingsDemo />
 
 <!--
-The four groups form a clear behavior ladder. S1 customers have been inactive for a long time and have low Frequency and Net value. S2 contains most regular customers. S3 customers are recent, repeat buyers with higher value. S4 customers buy most often and have the highest value. Together, S3 and S4 contain 457 customers, about 10.5 percent of all customers, but contribute 58.71 percent of observed Net value.
+【主讲】
 
-Now I will use the small window for a short demo. This is the static, browser-based version that also runs on GitHub Pages. I rotate the 3D chart once. Its three axes are the actual scaled and capped model inputs, and the diamonds are centroids. I do not use PCA because RFM already has three features, so each axis keeps its original role. Then I open Customer 13777. This real customer has Recency 1 day, Frequency 33, and Net Monetary of 25,748 pounds. The timeline contains 41 recorded invoices, including eight cancellations. This connects the segment back to real transactions, but it does not predict marketing success.
+S1 is long-inactive, and S2 is regular.
+S3 is active and high-value.
+S4 has the highest Frequency and value.
+This gives a clear behavior pattern.
+
+Together, S3 and S4 contain 457 customers.
+They are about 10.5 percent of all customers.
+But they contribute 58.71 percent of observed Net value.
+
+This 3D chart uses the scaled and capped model inputs.
+The diamonds are centroids.
+I do not use PCA, because RFM already has three features.
+
+Customer 13777 has Recency 1, Frequency 33, and Net Monetary of 25,748 pounds.
+Its 41 invoices include eight cancellations.
+This is an observation, not a response prediction.
+
+【本页Q&A，不读】
+
+1. 这四个cluster的实际意义是什么？
+
+它们是在当前观察窗口中，根据RFM距离总结出的探索性行为模式（exploratory behavior patterns）。S1到S4表现出从长期不活跃、常规购买，到近期高价值和最高频高价值的行为阶梯。它们用于总结和筛选客户，不是真实标签或永久身份。
+
+2. 为什么3D图不使用PCA？
+
+正式模型只有R、F、M三个特征，所以3D图可以直接让每个轴对应一个模型特征。图中使用的正是scaled/capped model coordinates，不是原始英镑和订单数。PCA会把三个特征组合成新的主成分，反而降低本项目的直接解释性。
+
+不能说：二维或三维图看起来分得开，所以证明cluster正确。可视化只帮助解释，模型选择还需要inertia、silhouette、ARI、簇规模和原始画像。
+
+3. S4只有51人，是否只是异常值？
+
+51人约占全部客户的1.18%，超过项目预设的1%检查线。S4在原始RFM画像中具有一致的高Frequency和高Net Monetary，而且定向敏感性分析没有显示它完全由重复行、特殊StockCode或地域造成。因此它值得作为顶端行为群体解释，但不能说它是客观存在的真实客户类型。
+
+4. 为什么Customer 13777有41张invoice，但Frequency只有33？
+
+Frequency只统计33张有效正向购买invoice。其余8张是C开头的取消记录（cancellation invoices），不会增加或扣减Frequency，只通过负金额调整Net Monetary。选择13777是因为它接近S4 centroid，适合作为真实代表案例，不是因为它最极端。
+
+5. 这些segments能够直接产生商业价值吗？
+
+它们可以帮助提出客户管理假设（customer-management hypotheses），例如S1唤回、S2促进复购、S3留存和S4高接触服务。但模型没有营销响应数据（response data），不能预测谁一定会回应，也不能证明这些策略会带来利润。实际效果仍需通过A/B tests验证。
+
+不能说：10.5%的客户“创造了58.71%的利润”。正确口径是他们贡献了当前数据中58.71%的observed Net value。
 -->
 
 ---
