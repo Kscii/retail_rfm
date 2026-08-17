@@ -35,20 +35,14 @@ fonts:
 【主讲】
 
 Hello everyone. I am Xuejian Fang.
+
 My research question is: Can customers be grouped into meaningful segments based on RFM?
-RFM means Recency, Frequency, and Net Monetary.
-I use K-means++ to identify four customer behavior patterns.
+
+RFM represents each customer using three feature, which are Recency, Frequency, and Monetary.
+
+I use K-means++ to identify "four" customer behavior patterns.
+
 Finally, I examine whether these patterns are stable and meaningful.
-
-【本页Q&A，不读】
-
-1. 为什么研究问题只说meaningful，没有说actionable？
-
-meaningful表示这些客群在RFM行为上有清楚、稳定且可以解释的差异。项目没有营销响应或实验数据，因此不能提前保证分群一定产生可执行效果（actionable outcomes）。
-
-2. 这是不是一个预测项目？
-
-不是。项目使用无监督聚类（unsupervised clustering）总结现有客户行为，不预测未来购买、营销响应或利润。
 -->
 
 ---
@@ -65,11 +59,16 @@ meaningful表示这些客群在RFM行为上有清楚、稳定且可以解释的�
 【主讲】
 
 First, I describe the dataset.
-It contains about half a million invoice lines, about twenty-six thousand invoices, and eight fields.
-It covers about one year, from December twenty ten to December twenty eleven.
 
-This example shows one customer with two invoices.
-A customer may have many invoices, and each invoice may have many invoice lines.
+It contains about half a million invoice lines, 
+about twenty-six thousand invoices, 
+and eight fields in raw csv.
+
+It covers about one year, which is from December twenty ten to December twenty eleven.
+
+There is an example from the raw csv file, it shows one customer with two invoices.
+
+In the raw dataset a customer may have many invoices, and each invoice may have many invoice lines, basicly a invoice line is a kind of stock in a invoice.
 
 In the source data, each row is one invoice line, not a complete invoice or a customer.
 For RFM, I use its date, invoice number, quantity, unit price, and customer ID.
@@ -258,9 +257,9 @@ K-means可能停在局部最优解（local optimum），结果可能受初始cen
 
 To choose k, I compare four measures across fifty fixed seeds.
 
-Inertia checks compactness. Silhouette checks separation. ARI checks stability. I also check the size of the smallest cluster.
+Inertia checks compactness. Silhouette(se-li-welt) checks separation. ARI checks stability. I also check the size of the smallest cluster.
 
-k equals two has the highest silhouette, but it gives only a broad split. In this split, about ninety-six percent are in the broad majority group, while about four percent are in a high-value group.
+k equals two has the highest silhouette(se-li-welt) , but it gives only a broad split. In this split, about ninety-six percent are in the broad majority group, while about four percent are in a high-value group.
 
 Overall, k equals four performs well across all four measures and gives clear customer profiles.
 Therefore, I choose k equals four.
@@ -296,22 +295,20 @@ ARI比较不同运行的客户分配是否一致，并校正随机一致。中�
 Based on this evidence, I obtain four customer profiles.
 Each profile suggests a different possible customer-management strategy.
 
-S1 is the long-inactive group, with median Recency of two hundred and forty-six days and only one purchase invoice.
+S1 is the long-inactive group, which has median bad Recency and very low purchase frequency.
 The company could try low-cost reactivation.
 
 S2 is the largest regular group, so the company could try repeat-purchase offers.
 
-S3 is the active high-value group, with recent, repeated purchasing and median Net Monetary of about four thousand eight hundred pounds.
+S3 is the active high-value group. They have recent and repeated purchasing and high Net Monetary.
 The company could try loyalty and retention strategies.
 
-S4 is small but top-frequency and high-value, so the company could try high-touch service.
+S4 is small but top-frequency and high-value, I think they are the most valuable group for the comany, company could try to provide some vip service for these customer.
 
 Together, S3 and S4 contain about four hundred and sixty customers.
 They are about ten percent of customers but contribute nearly sixty percent of observed Net value.
 This means that observed value is highly concentrated in a small group during this period.
 
-The three-dimensional chart keeps one axis for each RFM feature, and the diamonds show the centroids.
-Finally, the dashboard shows one representative S4 customer close to the centroid and lets us inspect the invoice history.
 
 【本页Q&A，不读】
 
@@ -373,9 +370,9 @@ Second, the data has no true segment labels, so there is no single correct clust
 The result also depends on k, scaling, and capping.
 
 Third, Net Monetary is not profit or customer lifetime value.
-The segments describe behavior during this data window, not permanent identities or future responses.
+The segments can only describe behavior during this data window.
 
-To address this, I would expand the window, update RFM, and track segment movement.
+To improve this, I would expand the window if I can get a larger dataset, so I can update RFM, and track segment movement.
 Then, I would use within-segment A/B tests to measure future purchase and retention.
 
 【本页Q&A，不读】
