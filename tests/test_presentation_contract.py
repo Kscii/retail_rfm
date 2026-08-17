@@ -82,12 +82,13 @@ def test_speaker_notes_are_readable_and_keep_the_requested_notation():
         r"K-means\+\+|R–F|S[1-4]|[A-Za-z]+(?:[-'][A-Za-z]+)*",
         "\n".join(scripts),
     )
-    assert 740 <= len(words) <= 760
+    assert 830 <= len(words) <= 870
     assert sum(len(re.findall(r"^\d+\. ", slide, re.MULTILINE)) for slide in slides) in range(25, 31)
     for script in scripts:
         assert not re.search(r"\d", re.sub(r"S[1-4]", "", script))
         assert not re.search(r"\b(?:Customer|Invoice)\s+\d+", script, re.IGNORECASE)
     joined = "\n".join(scripts)
+    assert "duplicate" not in (PRESENTATION / "slides.md").read_text(encoding="utf-8").lower()
     assert "K-means++" in joined
     assert "R–F" in joined
     for segment in ("S1", "S2", "S3", "S4"):
@@ -97,16 +98,16 @@ def test_speaker_notes_are_readable_and_keep_the_requested_notation():
 def test_speaker_notes_use_structured_transitions_and_approximate_business_numbers():
     scripts = [_main_script(slide).strip() for slide in _slides()]
     openings = (
-        "Good morning. I am Xuejian Fang.\nThis presentation examines",
+        "Hello everyone. I am Xuejian Fang.\nMy research question is:",
         "First, I describe the dataset.",
-        "Next, I define the analysis problem.",
-        "Before modelling, I examine three data issues.",
-        "Based on these issues, I preprocess the data.",
-        "After preprocessing, I apply K-means++ clustering.",
-        "To select k, I compare four types of evidence.",
+        "This is an unsupervised clustering problem.",
+        "Before modeling, I use EDA(exploratory data analysis)",
+        "Based on these issues, I clean and prepare the data for clustering.",
+        "After preprocessing, I apply K-means++ to the three scaled RFM features.",
+        "To choose k, I compare four measures across fifty fixed seeds.",
         "Based on this evidence, I obtain four customer profiles.",
-        "However, the result has three important boundaries.",
-        "Finally, I return to the research question.",
+        "However, the result has three important limitations.",
+        "Thank you.",
     )
     for script, opening in zip(scripts, openings, strict=True):
         assert script.startswith(opening)
@@ -130,17 +131,15 @@ def test_method_parameters_remain_exact_in_the_spoken_script():
     for exact_parameter in (
         "k equals two",
         "k equals four",
-        "ninety-nine-point-five percentile cap",
         "fifteen iterations",
-        "fifty seeds",
+        "fifty fixed seeds",
         "twenty initializations",
-        "ARI equals one",
         "one-hundred-pound purchase",
-        "one-day Recency",
-        "eight cancellations",
     ):
         assert exact_parameter in joined
         assert f"about {exact_parameter}" not in joined
+    assert "about ninety-six percent" in joined
+    assert "about four percent" in joined
 
 
 def test_real_data_method_and_static_only_findings_contract():
@@ -162,6 +161,29 @@ def test_real_data_method_and_static_only_findings_contract():
     assert "opacity: capped ? 0.65 : 0.35" in static_app
     assert 'size: 4, symbol: "diamond"' in static_app
     assert "data.schema_version !== 3" in static_app
+
+
+def test_findings_strategies_future_validation_and_thank_you_contract():
+    slides = _slides()
+    findings = (PRESENTATION / "components/FindingsDemo.vue").read_text(encoding="utf-8")
+    for strategy in (
+        "Possible strategy: low-cost reactivation",
+        "Possible strategy: repeat-purchase offers",
+        "Possible strategy: loyalty and retention",
+        "Possible strategy: high-touch service",
+    ):
+        assert strategy in findings
+
+    slide_nine = re.sub(r"<!--[\s\S]*?-->", "", slides[8])
+    assert "Limitations and future validation" in slide_nine
+    assert "Temporal validation" in slide_nine
+    assert "Expand the observation window · update RFM · track segment movement" in slide_nine
+    assert "Business validation" in slide_nine
+    assert "Within-segment A/B tests · measure future purchase and retention" in slide_nine
+    assert "Interpretation boundary" not in slide_nine
+
+    slide_ten = re.sub(r"<!--[\s\S]*?-->", "", slides[9]).strip()
+    assert slide_ten == '<div class="thank-you-slide">Thank you</div>'
 
 
 def test_presentation_assets_resolve_from_the_deployment_base():

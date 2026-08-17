@@ -154,7 +154,26 @@ report.checks.width1280 = await page.evaluate(() => ({
   viewport: window.innerWidth,
   horizontalOverflow: document.body.scrollWidth > window.innerWidth,
 }))
+report.checks.findingsStrategies = {
+  count: await page.locator('.strategy:visible').count(),
+  labels: await page.locator('.strategy:visible').allTextContents(),
+}
 await page.screenshot({ path: path.join(outputDir, 'slide8-static-1280x720.png') })
+
+await page.goto(slideUrl(9), { waitUntil: 'networkidle' })
+report.checks.futureValidation = {
+  temporal: await page.getByText('Temporal validation', { exact: true }).count(),
+  business: await page.getByText('Business validation', { exact: true }).count(),
+  oldBoundary: await page.getByText(/Interpretation boundary/i).count(),
+}
+await page.screenshot({ path: path.join(outputDir, 'slide9-validation-1280x720.png') })
+
+await page.goto(slideUrl(10), { waitUntil: 'networkidle' })
+report.checks.thankYou = {
+  visible: await page.locator('.thank-you-slide:visible').count(),
+  oldConclusion: await page.locator('.conclusion-grid, .behavior-strip, .future-flow').count(),
+}
+await page.screenshot({ path: path.join(outputDir, 'slide10-thank-you-1280x720.png') })
 
 await page.goto(slideUrl(1), { waitUntil: 'networkidle' })
 report.checks.titleName = await page.getByText('Xuejian Fang', { exact: true }).count()
@@ -228,6 +247,13 @@ if (customer.customer !== '13777' || !customer.invoices || !customer.cancellatio
 if (report.checks.animationImagesLoaded.count !== 20 || report.checks.animationImagesLoaded.loaded !== 20 || report.checks.animationSteps.some(count => count !== 1) || report.checks.animationOpacity.some(opacity => opacity < 0.99) || report.checks.animationFinalText < 1)
   throw new Error(`K-means++ animation contract failed: ${JSON.stringify({ steps: report.checks.animationSteps, opacity: report.checks.animationOpacity })}`)
 if (report.checks.width1280.horizontalOverflow) throw new Error('1280px viewport has horizontal overflow')
+const expectedStrategies = ['Possible strategy: low-cost reactivation', 'Possible strategy: repeat-purchase offers', 'Possible strategy: loyalty and retention', 'Possible strategy: high-touch service']
+if (report.checks.findingsStrategies.count !== 4 || JSON.stringify(report.checks.findingsStrategies.labels) !== JSON.stringify(expectedStrategies))
+  throw new Error(`Findings strategy contract failed: ${JSON.stringify(report.checks.findingsStrategies)}`)
+if (report.checks.futureValidation.temporal !== 1 || report.checks.futureValidation.business !== 1 || report.checks.futureValidation.oldBoundary !== 0)
+  throw new Error(`Future validation contract failed: ${JSON.stringify(report.checks.futureValidation)}`)
+if (report.checks.thankYou.visible !== 1 || report.checks.thankYou.oldConclusion !== 0)
+  throw new Error(`Thank-you slide contract failed: ${JSON.stringify(report.checks.thankYou)}`)
 if (report.checks.titleName !== 1 || report.checks.supervisor !== 1 || report.checks.supervisedBy !== 0 || report.checks.englishTitle !== 1 || report.checks.studentIdText !== 0)
   throw new Error('Title identity contract failed')
 if (report.checks.visibleCjk) throw new Error('Chinese text remains in the final English deck')
